@@ -51,7 +51,16 @@ export function useCollection() {
     write(next);
   }, []);
 
+  // Merges cards into the collection; returns how many were new.
+  const addMany = useCallback((cards: CatalogCard[]) => {
+    const current = read();
+    const next = { ...current };
+    for (const card of cards) next[card.id] ??= { card };
+    write(next);
+    return Object.keys(next).length - Object.keys(current).length;
+  }, []);
+
   const total = Object.keys(owned).length;
 
-  return { owned, total, add, remove };
+  return { owned, total, add, addMany, remove };
 }

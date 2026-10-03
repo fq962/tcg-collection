@@ -9,17 +9,20 @@ import type { CatalogCard } from "../lib/types";
 import { AddDialog } from "./add-dialog";
 import { CardTile, TrashIcon } from "./card-tile";
 import { ShareIcon, useShare } from "./share-button";
+import { DataMenu } from "./data-menu";
+import { useToast } from "./toast";
 import { TiltCard } from "./tilt-card";
 
 const field =
   "rounded-xl border border-white/10 bg-surface px-4 py-3 text-base outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30 sm:py-2 sm:text-sm";
 
 export function Collection() {
-  const { owned, total, add, remove } = useCollection();
+  const { owned, total, add, addMany, remove } = useCollection();
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [preview, setPreview] = useState<CatalogCard | null>(null);
-  const { share, toast } = useShare();
+  const { show, toast } = useToast();
+  const share = useShare(show);
 
   // Cards may have been saved from either language catalog, so check both holo lists.
   const holoEs = useHolo("es");
@@ -58,6 +61,7 @@ export function Collection() {
           <button onClick={() => setAdding(true)} className="min-h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-black transition hover:brightness-110 active:scale-95 sm:rounded-lg sm:px-4">
             + Añadir carta
           </button>
+          <DataMenu cards={Object.values(owned).map((o) => o.card)} onImport={addMany} notify={show} />
         </div>
       </div>
 

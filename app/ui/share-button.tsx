@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { buildLink, shareLink } from "../lib/share";
 import type { CatalogCard } from "../lib/types";
 
@@ -13,23 +12,10 @@ export function ShareIcon() {
 }
 
 // Builds a link for the given cards and shares it (native sheet on mobile, clipboard otherwise).
-export function useShare() {
-  const [message, setMessage] = useState("");
-
-  async function share(cards: CatalogCard[], title: string) {
+export function useShare(show: (text: string) => void) {
+  return async function share(cards: CatalogCard[], title: string) {
     const result = await shareLink(await buildLink(cards), title);
     const text = { shared: "", cancelled: "", copied: "Enlace copiado ✓", failed: "No se pudo compartir el enlace" }[result];
-    if (text) {
-      setMessage(text);
-      setTimeout(() => setMessage(""), 2500);
-    }
-  }
-
-  const toast = message ? (
-    <div role="status" className="fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 mx-auto w-fit rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-xl">
-      {message}
-    </div>
-  ) : null;
-
-  return { share, toast };
+    if (text) show(text);
+  };
 }

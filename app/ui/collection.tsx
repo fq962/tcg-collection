@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSetName } from "../lib/use-set-name";
 import { useHolo } from "../lib/use-holo";
 import { useCollection } from "../lib/use-collection";
-import { cardImage } from "../lib/tcgdex";
+import { cardImage, setIdOf } from "../lib/tcgdex";
 import type { CatalogCard } from "../lib/types";
 import { AddDialog } from "./add-dialog";
 import { CardTile, TrashIcon } from "./card-tile";
@@ -19,6 +19,7 @@ const field =
 export function Collection() {
   const { owned, total, add, addMany, remove } = useCollection();
   const [query, setQuery] = useState("");
+  const [packId, setPackId] = useState("");
   const [adding, setAdding] = useState(false);
   const [preview, setPreview] = useState<CatalogCard | null>(null);
   const { show, toast } = useToast();
@@ -30,23 +31,54 @@ export function Collection() {
   const setName = useSetName();
   const isHolo = (id: string) => holoEs.has(id) || holoEn.has(id);
 
+  const all = useMemo(() => Object.values(owned).map((o) => o.card), [owned]);
+
+  // Packs present in the collection, with how many cards each has.
+  const packs = useMemo(() => {
+    const counts = new Map<string, { label: string; count: number }>();
+    for (const card of all) {
+      const id = setIdOf(card);
+      const entry = counts.get(id) ?? { label: setName(card) ?? id.toUpperCase(), count: 0 };
+      entry.count++;
+      counts.set(id, entry);
+    }
+    return [...counts].sort(([, a], [, b]) => a.label.localeCompare(b.label));
+  }, [all, setName]);
+
+  // A removed card can empty the selected pack; fall back to showing everything.
+  const activePack = packs.some(([id]) => id === packId) ? packId : "";
+
   const cards = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return Object.values(owned)
-      .map((o) => o.card)
-      .filter((c) => !q || `${c.name} ${c.localId} ${c.id}`.toLowerCase().includes(q));
-  }, [owned, query]);
+    return all.filter(
+      (c) =>
+        (!activePack || setIdOf(c) === activePack) &&
+        (!q || `${c.name} ${c.localId} ${c.id} ${setName(c) ?? ""}`.toLowerCase().includes(q)),
+    );
+  }, [all, query, activePack, setName]);
 
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6">
       <div className="grid grid-cols-[1fr_auto] items-center gap-3 py-4 sm:flex sm:py-6">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar en mi colección…"
-          className={`${field} col-span-2 w-full sm:flex-1`}
-        />
+        <div className="col-span-2 flex gap-2 sm:flex-1">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar en mi colección…"
+            className={`${field} min-w-0 flex-1`}
+          />
+          {packs.length > 1 && (
+            <select value={activePack} onChange={(e) => setPackId(e.target.value)} aria-label="Filtrar por pack" className={`${field} w-36 sm:w-56`}>
+              <option value="">Todos los packs</option>
+              {packs.map(([id, { label, count }]) => (
+                <option key={id} value={id}>
+                  {label} ({count})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <p className="text-sm font-bold sm:rounded-full sm:border sm:border-white/15 sm:px-4 sm:py-2">
           Total de cartas: <span className="tabular-nums text-accent">{total}</span>
         </p>

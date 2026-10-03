@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { langOf } from "./share";
 import { fetchSetNames, setIdOf } from "./tcgdex";
 import type { CatalogCard, Lang } from "./types";
@@ -26,12 +26,16 @@ export function useSetName() {
     };
   }, []);
 
-  return (card: CatalogCard) => {
-    if (!names) return undefined;
-    const id = setIdOf(card);
-    // Prefer the language the card was saved in, fall back to the other one.
-    const lang = langOf(card);
-    // If the set list is missing this id (or failed to load), show the raw set id rather than no chip at all.
-    return names[lang].get(id) ?? names[lang === "es" ? "en" : "es"].get(id) ?? id.toUpperCase();
-  };
+  // Identity only changes when the names arrive, so it is safe to use in hook dependency lists.
+  return useCallback(
+    (card: CatalogCard) => {
+      if (!names) return undefined;
+      const id = setIdOf(card);
+      // Prefer the language the card was saved in, fall back to the other one.
+      const lang = langOf(card);
+      // If the set list is missing this id (or failed to load), show the raw set id rather than no chip at all.
+      return names[lang].get(id) ?? names[lang === "es" ? "en" : "es"].get(id) ?? id.toUpperCase();
+    },
+    [names],
+  );
 }

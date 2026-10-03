@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSetName } from "../lib/use-set-name";
 import { useHolo } from "../lib/use-holo";
 import { useCollection } from "../lib/use-collection";
 import { cardImage } from "../lib/tcgdex";
 import type { CatalogCard } from "../lib/types";
 import { AddDialog } from "./add-dialog";
 import { CardTile, TrashIcon } from "./card-tile";
+import { ShareIcon, useShare } from "./share-button";
 import { TiltCard } from "./tilt-card";
 
 const field =
@@ -17,10 +19,12 @@ export function Collection() {
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [preview, setPreview] = useState<CatalogCard | null>(null);
+  const { share, toast } = useShare();
 
   // Cards may have been saved from either language catalog, so check both holo lists.
   const holoEs = useHolo("es");
   const holoEn = useHolo("en");
+  const setName = useSetName();
   const isHolo = (id: string) => holoEs.has(id) || holoEn.has(id);
 
   const cards = useMemo(() => {
@@ -43,9 +47,18 @@ export function Collection() {
         <p className="text-sm font-bold sm:rounded-full sm:border sm:border-white/15 sm:px-4 sm:py-2">
           Total de cartas: <span className="tabular-nums text-accent">{total}</span>
         </p>
-        <button onClick={() => setAdding(true)} className="min-h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-black transition hover:brightness-110 active:scale-95 sm:rounded-lg sm:px-4">
-          + Añadir carta
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => share(Object.values(owned).map((o) => o.card), "Mi colección Pokémon TCG")}
+            disabled={total === 0}
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 text-sm transition hover:bg-white/5 active:scale-95 disabled:opacity-40"
+          >
+            <ShareIcon /> Compartir
+          </button>
+          <button onClick={() => setAdding(true)} className="min-h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-black transition hover:brightness-110 active:scale-95 sm:rounded-lg sm:px-4">
+            + Añadir carta
+          </button>
+        </div>
       </div>
 
       {total === 0 ? (
@@ -66,18 +79,20 @@ export function Collection() {
               key={card.id}
               card={card}
               holo={isHolo(card.id)}
-              onRemove={() => remove(card.id)}
+              setName={setName(card)}
               onPreview={() => setPreview(card)}
             />
           ))}
         </div>
       )}
 
+      {toast}
       {adding && <AddDialog owned={owned} onAdd={add} onClose={() => setAdding(false)} />}
       {preview && (
         <Preview
           card={preview}
           holo={isHolo(preview.id)}
+          onShare={() => share([preview], preview.name)}
           onRemove={() => {
             remove(preview.id);
             setPreview(null);
@@ -92,11 +107,13 @@ export function Collection() {
 function Preview({
   card,
   holo,
+  onShare,
   onRemove,
   onClose,
 }: {
   card: CatalogCard;
   holo: boolean;
+  onShare: () => void;
   onRemove: () => void;
   onClose: () => void;
 }) {
@@ -109,20 +126,19 @@ function Preview({
   return (
     <div role="dialog" aria-modal="true" aria-label={card.name} onClick={onClose} className="fixed inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
       <div onClick={(e) => e.stopPropagation()} className="aspect-[5/7] w-[min(90vw,calc(72dvh*5/7))]">
-        <TiltCard holo={holo} max={10} label={card.name} className="shadow-2xl shadow-black">
+        <TiltCard holo={holo} max={10} touch label={card.name} className="shadow-2xl shadow-black">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={cardImage(card, "high")} alt={card.name} className="size-full object-cover" />
         </TiltCard>
       </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="flex min-h-11 items-center gap-2 rounded-full bg-white/10 px-5 text-sm transition hover:bg-red-500/20 hover:text-red-400"
-      >
-        <TrashIcon /> Eliminar de mi colección
-      </button>
+      <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
+        <button onClick={onShare} className="flex min-h-11 items-center gap-2 rounded-full bg-white/10 px-5 text-sm transition hover:bg-white/20">
+          <ShareIcon /> Compartir
+        </button>
+        <button onClick={onRemove} className="flex min-h-11 items-center gap-2 rounded-full bg-white/10 px-5 text-sm transition hover:bg-red-500/20 hover:text-red-400">
+          <TrashIcon /> Eliminar
+        </button>
+      </div>
     </div>
   );
 }

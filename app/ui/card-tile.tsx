@@ -1,5 +1,6 @@
 import { cardImage } from "../lib/tcgdex";
 import type { CatalogCard } from "../lib/types";
+import { CardChips } from "./set-chip";
 import { TiltCard } from "./tilt-card";
 
 export function TrashIcon() {
@@ -13,12 +14,12 @@ export function TrashIcon() {
 export function CardTile({
   card,
   holo,
-  onRemove,
+  setName,
   onPreview,
 }: {
   card: CatalogCard;
   holo: boolean;
-  onRemove: () => void;
+  setName?: string;
   onPreview: () => void;
 }) {
   return (
@@ -28,19 +29,11 @@ export function CardTile({
         <img src={cardImage(card)} alt={card.name} loading="lazy" className="size-full object-cover" />
       </TiltCard>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{card.name}</p>
-          <p className="text-xs text-muted">#{card.localId}</p>
-        </div>
-        <button
-          onClick={onRemove}
-          aria-label={`Eliminar ${card.name} de mi colección`}
-          className="-mr-1 shrink-0 rounded-full p-2.5 sm:p-2 text-muted active:bg-red-500/15 active:text-red-400 transition hover:bg-red-500/15 hover:text-red-400"
-        >
-          <TrashIcon />
-        </button>
+      <div className="mt-2 flex items-baseline gap-1.5">
+        <p className="truncate text-sm font-medium">{card.name}</p>
+        <span className="shrink-0 text-xs text-muted">#{card.localId}</span>
       </div>
+      <CardChips card={card} setName={setName} />
     </article>
   );
 }

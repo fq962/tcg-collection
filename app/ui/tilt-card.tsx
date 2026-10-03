@@ -5,6 +5,7 @@ import { useRef } from "react";
 export function TiltCard({
   holo,
   max = 14,
+  touch = false,
   onClick,
   label,
   className = "",
@@ -12,6 +13,8 @@ export function TiltCard({
 }: {
   holo: boolean;
   max?: number;
+  /** Also follow finger drags on touch screens (used for the opened card). */
+  touch?: boolean;
   onClick?: () => void;
   label: string;
   className?: string;
@@ -20,7 +23,7 @@ export function TiltCard({
   const ref = useRef<HTMLButtonElement>(null);
 
   function move(e: React.PointerEvent<HTMLButtonElement>) {
-    if (e.pointerType === "touch") return;
+    if (e.pointerType === "touch" && !touch) return;
     const el = ref.current!;
     const r = el.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width;
@@ -46,9 +49,11 @@ export function TiltCard({
         onClick={onClick}
         onPointerMove={move}
         onPointerLeave={leave}
+        onPointerUp={(e) => e.pointerType === "touch" && leave()}
+        onPointerCancel={leave}
         aria-label={label}
         data-active="false"
-        className={`tilt block aspect-[5/7] w-full overflow-hidden rounded-xl bg-surface ${className}`}
+        className={`tilt block aspect-[5/7] w-full overflow-hidden rounded-xl bg-surface ${touch ? "tilt-touch" : ""} ${className}`}
       >
         {children}
         {holo && <span className="holo" aria-hidden />}

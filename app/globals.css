@@ -97,11 +97,25 @@ body {
   opacity: 0.12;
 }
 
-@media (hover: none), (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .tilt {
     transform: none !important;
   }
   .glare {
     display: none;
   }
+}
+
+/* Touch screens have no hover, so only cards that opt in (.tilt-touch, the opened card) follow the finger. */
+@media (hover: none) {
+  .tilt:not(.tilt-touch) {
+    transform: none !important;
+  }
+  .tilt:not(.tilt-touch) .glare {
+    display: none;
+  }
+}
+
+.tilt-touch {
+  touch-action: none; /* dragging on the card tilts it instead of scrolling the page */
 }
